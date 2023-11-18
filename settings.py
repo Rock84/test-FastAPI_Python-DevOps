@@ -1,3 +1,3 @@
 import redis
 
-conn = redis.Redis(host='localhost', port=6379, db=1, decode_responses=True)
+conn = redis.Redis(host='dev_test_bd', port=6379, db=1, decode_responses=True)
