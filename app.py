@@ -1,9 +1,16 @@
 import psutil
-import redis
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
+from pydantic import BaseModel, Field
+
+
+from settings import conn
 
 app = FastAPI()
+
+
+class InputModel(BaseModel):
+    value: str = Field(default='', max_length=64, min_length=1)
 
 
 @app.get('/memory')
@@ -14,19 +21,23 @@ def memory_limit(percent: int):
     else:
         return 'is fine'
 
+
 @app.put('/put')
-def new_value(percent: int):
-    conn = redis.Redis(host='dev_test_bd', port=6379, db=0, decode_responses=True)
-    conn.set('1', percent)
-    return {conn.get('1')}
+def new_value(form: InputModel):
+    if conn.set(name='key', value=form.value, xx=True):
+        return form
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
 
 @app.post('/post')
-def create_value(percent: int):
-    conn = redis.Redis(host='dev_test_bd', port=6379, db=0, decode_responses=True)
-    conn.set('1', percent)
-    return {conn.get('1')}
+def create_value(form: InputModel):
+    if conn.set(name='key', value=form.value, nx=True):
+        return form
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+
 
 @app.get('/get')
 def get_value():
-    conn = redis.Redis(host='dev_test_bd', port=6379, db=0, decode_responses=True)
-    return {conn.get('1')}
+    return conn.get('key')
